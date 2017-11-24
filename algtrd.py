@@ -25,7 +25,7 @@ class AllPayAuction:
         old_bids = []
         while True:
             old_bids = copy(self.bids)
-            print("O", old_bids)
+            #print("O", old_bids)
             for bidder in range(0, self.bidders):
             #for bidder in range(self.bidders - 1, -1, -1):
                 bid = self.bids.pop(self.find_bid(bidder))
@@ -35,12 +35,13 @@ class AllPayAuction:
             if (old_bids == self.bids):
                 break
 
-            print("N", self.bids)
+            #print("N", self.bids)
 
 
-        print("done")
+        #print("done")
+
         print(self.bids)
-
+        return max(self.bids, key=lambda bid: bid[1])[1], sum(j for i, j in self.bids) / self.bidders, min(self.bids, key=lambda bid: bid[1])[1]
     def user_action(self, user_id, previous_bid):
         # TODO: there #1 seems to let #2 dominate him, i don't understand why
         # TODO: ok so it doesnt understand the second price thing
@@ -61,19 +62,19 @@ class AllPayAuction:
 
         for i in range(self.k):
 
-            bid_to_overcome = self.bids[next_price(self.bidders, i)]
+            #bid_to_overcome = self.bids[next_price(self.bidders, i)]
+            if previous_bid > self.bids[i][1]:
+                attempts.insert(0, (self.utility_function_targeted(self.bids[i][1], user_id, i), previous_bid))
 
-
-            if self.bids[i][1] <= self.budgets[user_id] and self.bids[i][1] <= self.values[i] and self.bids[i][0] > user_id:
+            elif self.bids[i][1] <= self.budgets[user_id] and self.bids[i][1] <= self.values[i] and self.bids[i][0] > user_id:
                 #print("using id to overcome")
-                attempts.insert(0, (self.utility_function_targeted(bid_to_overcome[1], user_id, i), self.bids[i][1]))
+                attempts.insert(0, (self.utility_function_targeted(self.bids[i][1], user_id, i), self.bids[i][1]))
 
             elif self.bids[i][1] + 1 <= self.budgets[user_id] and self.bids[i][1] + 1 <= self.values[i] :
                 #print("using budget to overcome")
-                attempts.insert(0, (self.utility_function_targeted(bid_to_overcome[1] + 1, user_id, i), self.bids[i][1] + 1))
+                attempts.insert(0, (self.utility_function_targeted(self.bids[i][1], user_id, i), self.bids[i][1] + 1))
 
-        print("UID", user_id, "FA", attempts)
-        print(max(attempts, key=lambda attempt: attempt[0]))
+        #print("ID", user_id, "FA", attempts, "RE", max(attempts, key=lambda attempt: attempt[0]))
         return max(attempts, key=lambda attempt: attempt[0])[1]
 
     def find_bid(self, user_id):
@@ -104,10 +105,11 @@ def next_price(bidders, user_id):
 class TestAllPayAuction(unittest.TestCase):
 
     def test_scenario_1(self):
-        values = [80, 20]
-        budgets = [100, 100, 100, 100]
-        au = AllPayAuction(values, budgets)
-        au.iterative_best_response()
+        tests = [(999, 1), (900, 100), (800, 200), (700, 300), (600, 400), (501, 499)]
+        budgets = [1000, 1000, 1000, 1000]
+        for values in tests:
+            au = AllPayAuction(values, budgets)
+            print(au.iterative_best_response())
 
     """
     def test_scenario_2(self):
