@@ -25,40 +25,43 @@ class AllPayAuction:
         old_bids = []
         while True:
             old_bids = copy(self.bids)
-
+            print("O", old_bids)
             for bidder in range(0, self.bidders):
             #for bidder in range(self.bidders - 1, -1, -1):
                 bid = self.bids.pop(self.find_bid(bidder))
-                self.bids.append((bid[0], self.user_action(bid[0])))
+                self.bids.append((bid[0], self.user_action(bid[0], bid[1])))
                 self.bids.sort(key=lambda bid: bid[1], reverse=True)
 
             if (old_bids == self.bids):
                 break
-            print("O", old_bids)
+
             print("N", self.bids)
 
 
         print("done")
         print(self.bids)
 
-    def user_action(self, user_id):
-        # TODO: there seems to be some bug people randomly go to zero bid
+    def user_action(self, user_id, previous_bid):
+        # TODO: there #1 seems to let #2 dominate him, i don't understand why
+        # TODO: ok so it doesnt understand the second price thing
+        # LOG:
+        # O [(0, 80), (1, 80), (2, 0), (3, 0)]
+        # UID 0 FA [(20, 0), (80, 80), (0, 0)]
+        # (80, 80)
+        # UID 1 FA [(20, 0), (0, 0)]
+        # (20, 0)
+        # UID 2 FA [(20, 0), (0, 0)]
+        # (20, 0)
+        # UID 3 FA [(19, 1), (0, 0)]
+        # (19, 1)
+        # N [(0, 80), (3, 1), (1, 0), (2, 0)]
+
         # utility, bid
         attempts = [(0, 0)]
 
         for i in range(self.k):
 
-            #print("UID", user_id, "PUID", self.bids[i][0])
-            #print("A", attempts)
-            #print("B",self.bids[i][1] >= self.values[i])
-            #print("U",self.bids[i][0] < user_id)
-
             bid_to_overcome = self.bids[next_price(self.bidders, i)]
-            # bid_to_overcome = self.bids[i]
-
-            #if bid_to_overcome[1] >= self.values[i] and bid_to_overcome[0] < user_id:
-                #print("jump?")
-            #    continue
 
 
             if self.bids[i][1] <= self.budgets[user_id] and self.bids[i][1] <= self.values[i] and self.bids[i][0] > user_id:
@@ -101,8 +104,8 @@ def next_price(bidders, user_id):
 class TestAllPayAuction(unittest.TestCase):
 
     def test_scenario_1(self):
-        values = [8, 2]
-        budgets = [10, 10, 10, 10]
+        values = [80, 20]
+        budgets = [100, 100, 100, 100]
         au = AllPayAuction(values, budgets)
         au.iterative_best_response()
 
