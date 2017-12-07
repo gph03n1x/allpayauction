@@ -16,8 +16,6 @@ class AllPayAuction:
         self.bidders = len(budgets)
         self.values = values
         self.budgets = budgets
-
-
         if random_start:
             self.bids = [(user_id, random.randint(0, self.budgets[user_id])) for user_id in range(self.bidders)]
         else:
@@ -92,4 +90,3 @@ class AllPayAuction:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Algorithmic trading iterative best response.")
     args = parser.parse_args()
-
