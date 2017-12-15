@@ -136,11 +136,10 @@ if __name__ == "__main__":
 
     with open(args.data, "r") as data_file:
         json_data = json.load(data_file)
-        for pair in json_data["values"]:
-            au = AllPayAuction(pair, json_data["budgets"], random_start=args.random_start)
-            max_effort, avg_effort, min_effort = au.iterative_best_response()
-            print("Maximum effort: ", max_effort)
-            print("Average effort: ", avg_effort)
-            print("Minimum effort: ", min_effort)
-            for bid in au.bids:
-                print("User id:{0} made a bid of {1}".format(bid[0], bid[1]))
+        au = AllPayAuction(json_data["values"], json_data["budgets"], random_start=args.random_start)
+        max_effort, avg_effort, min_effort = au.iterative_best_response()
+        print("Maximum effort: ", max_effort)
+        print("Average effort: ", avg_effort)
+        print("Minimum effort: ", min_effort)
+        for bid in au.bids:
+            print("User id:{0} made a bid of {1}".format(bid[0], bid[1]))
