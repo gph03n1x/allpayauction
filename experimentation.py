@@ -1,14 +1,11 @@
 import unittest
 from algtrd import AllPayAuction
-import matplotlib.pylab as plt
+import matplotlib.pyplot as plt
 
 
 class TestBiddingAllPayAuction(unittest.TestCase):
     RANDOM_START = True
     PATH = ""
-
-    def setUp(self):
-        print()
 
     def test_scenario_1(self):
         self.name = "scenario1/"
@@ -39,28 +36,41 @@ class TestBiddingAllPayAuction(unittest.TestCase):
             x_values, plot_data = au.iterative_best_response(True)
             x_values = range(x_values)
 
-            ax1 = plt.subplot2grid((2, 2), (0, 0))
-            ax2 = plt.subplot2grid((2, 2), (0, 1))
-            ax3 = plt.subplot2grid((2, 2), (1, 0))
-            ax4 = plt.subplot2grid((2, 2), (1, 1))
+            fig = plt.figure()
+            ax1 = fig.add_subplot(221)
+            ax2 = fig.add_subplot(222)
+            ax3 = fig.add_subplot(223)
+            ax4 = fig.add_subplot(224)
 
             ax1.plot(x_values, plot_data[0], 'r')
             ax2.plot(x_values, plot_data[1], 'b')
             ax3.plot(x_values, plot_data[2], 'g')
             ax4.plot(x_values, plot_data[3], 'y')
 
-            plt.xlabel("Iterations")
-            plt.ylabel("Bid")
+            ax1.set_xlabel("Iterations")
+            ax1.set_ylabel("Bid")
+            ax1.set_title("Bidder 0")
 
+            ax2.set_xlabel("Iterations")
+            ax2.set_ylabel("Bid")
+            ax2.set_title("Bidder 1")
+
+            ax3.set_xlabel("Iterations")
+            ax3.set_ylabel("Bid")
+            ax3.set_title("Bidder 2")
+
+            ax4.set_xlabel("Iterations")
+            ax4.set_ylabel("Bid")
+            ax4.set_title("Bidder 3")
+
+            plt.tight_layout()
             plt.savefig(self.base + self.name + str(values) + '.png')
+            plt.close(fig)
 
 
 class TestMeasureAllPayAuctionEffort(unittest.TestCase):
     RANDOM_START = True
     PATH = ""
-
-    def setUp(self):
-        print()
 
     def test_scenario_1(self):
         self.name = "scenario1/"
@@ -88,9 +98,11 @@ class TestMeasureAllPayAuctionEffort(unittest.TestCase):
         y1 = []
         y2 = []
         y3 = []
-        ax1 = plt.subplot2grid((3, 1), (0, 0))
-        ax2 = plt.subplot2grid((3, 1), (1, 0))
-        ax3 = plt.subplot2grid((3, 1), (2, 0))
+        fig = plt.figure()
+        ax1 = fig.add_subplot(311)
+        ax2 = fig.add_subplot(312)
+        ax3 = fig.add_subplot(313)
+
         for values in self.tests:
             au = AllPayAuction(values, self.budgets, random_start=self.RANDOM_START)
 
@@ -104,10 +116,14 @@ class TestMeasureAllPayAuctionEffort(unittest.TestCase):
         ax2.plot(x, y2, 'b')
         ax3.plot(x, y3, 'g')
 
+        ax1.set_xlabel("abs(Value[0] - Value[1])")
+        ax2.set_xlabel("abs(Value[0] - Value[1])")
+        ax3.set_xlabel("abs(Value[0] - Value[1])")
+
         ax1.set_title("Maximum")
         ax2.set_title("Average")
         ax3.set_title("Minimum")
-
+        plt.tight_layout()
         plt.savefig(self.base + self.name + "effort.png")
 
 
@@ -118,7 +134,7 @@ if __name__ == "__main__":
         TestMeasureAllPayAuctionEffort.RANDOM_START = _boolean
         TestBiddingAllPayAuction.PATH = _path
         TestMeasureAllPayAuctionEffort.PATH = _path
-        suite = unittest.TestLoader().loadTestsFromTestCase(TestBiddingAllPayAuction)
-        unittest.TextTestRunner(verbosity=2).run(suite)
+        #suite = unittest.TestLoader().loadTestsFromTestCase(TestBiddingAllPayAuction)
+        #unittest.TextTestRunner(verbosity=2).run(suite)
         suite = unittest.TestLoader().loadTestsFromTestCase(TestMeasureAllPayAuctionEffort)
         unittest.TextTestRunner(verbosity=2).run(suite)
