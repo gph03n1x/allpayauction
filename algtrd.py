@@ -8,6 +8,23 @@ from copy import copy
 from collections import defaultdict
 
 
+class Bidder:
+    def __init__(self, user_id, budget, starting_bid, trophies):
+        self.user_id = user_id
+        self.budget = budget
+        self.bid = starting_bid
+        self.trophies = trophies
+
+    def __lt__(self, other):
+        if self.bid == other.bid:
+            return self.user_id < other.user_id
+        return self.bid < other.bid
+
+    def get_utility(self, trophy_id):
+        if self.bid > self.budget:
+            return -math.inf
+        return self.trophies[trophy_id] - self.bid
+
 
 class AllPayAuction:
     def __init__(self, values, budgets, random_start=True):
@@ -24,9 +41,15 @@ class AllPayAuction:
         self.budgets = budgets
 
         if random_start:
-            self.bids = [(user_id, random.randint(0, self.budgets[user_id])) for user_id in range(self.bidders)]
+            self.bids = [
+                Bidder(user_id, self.budgets[user_id], random.randint(0, self.budgets[user_id]), self.values)
+                for user_id in range(self.bidders)
+            ]
         else:
-            self.bids = [(user_id, 0) for user_id in range(self.bidders)]
+            self.bids = [
+                Bidder(user_id, self.budgets[user_id], 0, self.values)
+                for user_id in range(self.bidders)
+            ]
 
     def iterative_best_response(self, return_bids=False):
         """
@@ -39,7 +62,7 @@ class AllPayAuction:
         if return_bids:
             plot_data = defaultdict(list)
             for bidder in range(self.bidders):
-                plot_data[bidder].append(self.bids[self.find_bid(bidder)][1])
+                plot_data[bidder].append(self.bids[self.find_bid(bidder)].bid)
             count = 1
 
         while True:
@@ -48,14 +71,15 @@ class AllPayAuction:
 
             for bidder in range(self.bidders):
 
-                selected_bid = self.bids.pop(self.find_bid(bidder))
-                self.bids.append((selected_bid[0], self.user_action(selected_bid[0], selected_bid[1])))
-                self.bids.sort(key=lambda bid: bid[1], reverse=True)
+                selected_bidder = self.bids.pop(self.find_bid(bidder))
+                selected_bidder.bid = self.user_action(selected_bidder)
+                self.bids.append(selected_bidder)
+                self.bids.sort(key=lambda bid: bid.bid, reverse=True)
 
             if return_bids:
                 for bidder in range(self.bidders):
                     position = self.find_bid(bidder)
-                    plot_data[bidder].append(self.bids[position][1])
+                    plot_data[bidder].append(self.bids[position].bid)
 
                 count += 1
 
@@ -65,16 +89,16 @@ class AllPayAuction:
         if return_bids:
             return count, plot_data
 
-        return max(self.bids, key=lambda bid: bid[1])[1],\
-               sum(j for i, j in self.bids) / self.bidders,\
-               min(self.bids, key=lambda bid: bid[1])[1]
+        return max(self.bids, key=lambda bid: bid.bid).bid,\
+               sum(bidder.bid for bidder in self.bids) / self.bidders,\
+               min(self.bids, key=lambda bid: bid.bid).bid
 
-    def user_action(self, user_id, previous_bid):
+    def user_action(self, bidder):
         """
         Ο χρήστης έχει μια σειρά από αποφάσεις από τις οποίες διαλέγει εκείνη που του αποδίδει το μεγαλύτερο
         utility. Η αποφάσεις του λαμβάνονται σε σχέση με το κάθε τρόπαιο.
         :param user_id:
-        :param previous_bid:
+        :param bidder.bid:
         :return:
         """
 
@@ -83,19 +107,19 @@ class AllPayAuction:
 
         for i in range(self.k):
             # Κοιτάει αν η προσφορά του ξεπερνάει την προσφορά του πλειοδότη που κερδίζει το συγκεκριμένο τρόπαιο.
-            if previous_bid > self.bids[i][1]:
-                attempts.insert(0, (self.utility_function_targeted(self.bids[i][1], user_id, i), previous_bid))
+            if bidder.bid > self.bids[i].bid:
+                attempts.insert(0, (bidder.get_utility(i), bidder.bid))
 
             # Αν όχι και το id του είναι μεγαλύτερο από το id του πλειοδότη που κερδίζει κάνει την προσφορά του ίση με
             # με την προσφορά του άλλου.
-            elif self.bids[i][1] <= self.budgets[user_id] and self.bids[i][1] <= self.values[i] \
-                    and self.bids[i][0] > user_id:
+            elif self.bids[i].bid <= bidder.budget and self.bids[i].bid <= self.values[i] \
+                    and self.bids[i].user_id > bidder.user_id:
 
-                attempts.insert(0, (self.utility_function_targeted(self.bids[i][1], user_id, i), self.bids[i][1]))
+                attempts.insert(0, (bidder.get_utility(i), self.bids[i].bid))
 
             # Αν πάλι δεν έχει πιο δυνατο id τότε προσφέρει 1 παραπάνω αξία σε σχέση με τον άλλο.
-            elif self.bids[i][1] + 1 <= self.budgets[user_id] and self.bids[i][1] + 1 <= self.values[i]:
-                attempts.insert(0, (self.utility_function_targeted(self.bids[i][1], user_id, i), self.bids[i][1] + 1))
+            elif self.bids[i].bid + 1 <= bidder.budget and self.bids[i].bid + 1 <= self.values[i]:
+                attempts.insert(0, (bidder.get_utility(i), self.bids[i].bid+1))
 
         # Επιστρέφει την προσφορά που του δίνει το πιο πολύ utility.
         return max(attempts, key=lambda attempt: attempt[0])[1]
@@ -106,22 +130,11 @@ class AllPayAuction:
         :param user_id:
         :return:
         """
-        for position, bid in enumerate(self.bids):
-            if bid[0] == user_id:
+        for position, bidder in enumerate(self.bids):
+            if bidder.user_id == user_id:
                 return position
 
-    def utility_function_targeted(self, bid, user_id, value_id):
-        """
-        Επιστρέφει το utility ενός πλειδότη εφόσον τα λεφτά που θα προσφέρει στο τέλος
-        είναι μικρότερα της αξίας του τρόπαιου που θέλει να αποκτήσει.
-        :param bid:
-        :param user_id:
-        :param value_id:
-        :return:
-        """
-        if bid > self.budgets[user_id]:
-            return -math.inf
-        return self.values[value_id] - bid
+
 
 
 if __name__ == "__main__":
@@ -142,4 +155,4 @@ if __name__ == "__main__":
         print("Average effort: ", avg_effort)
         print("Minimum effort: ", min_effort)
         for bid in au.bids:
-            print("User id:{0} made a bid of {1}".format(bid[0], bid[1]))
+            print("User id:{0} made a bid of {1}".format(bid.user_id, bid.bid))
