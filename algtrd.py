@@ -26,9 +26,16 @@ class Bidder:
             return -math.inf
         return self.trophies[trophy_id] - self.bid
 
+    def __str__(self):
+        return "user: {0} budget: {1} trophies: {2} current-bid: {3}".format(str(self.user_id),
+                                                                             str(self.budget),
+                                                                             str(self.trophies),
+                                                                             str(self.bid),
+                                                                             )
+
 
 class AllPayAuction:
-    def __init__(self, values, budgets, random_start=True):
+    def __init__(self, experiment, random_start=True):
         """
         Αρχικοποιεί την δημοπρασία (διαγωνισμό) με προσφορές για τον κάθε πλειοδότη.
         Η αρχική προσφορά μπορεί είτε να ξεκινάει για όλους από το 0 είτε να είναι τυχαία.
@@ -36,21 +43,31 @@ class AllPayAuction:
         :param budgets:
         :param random_start:
         """
-        self.k = len(values)
-        self.bidders = len(budgets)
-        self.values = values
-        self.budgets = budgets
+        self.experiment = experiment
+        self.bidders = len(self.experiment["bidders"])
+        self.k = len(self.get_values(0))
+
 
         if random_start:
             self.bids = [
-                Bidder(user_id, self.budgets[user_id], random.randint(0, self.budgets[user_id]), self.values)
+                Bidder(user_id, self.get_budget(user_id), random.randint(0, self.budgets[user_id]), self.get_values(user_id))
                 for user_id in range(self.bidders)
             ]
         else:
             self.bids = [
-                Bidder(user_id, self.budgets[user_id], 0, self.values)
+                Bidder(user_id, self.get_budget(user_id), 0, self.get_values(user_id))
                 for user_id in range(self.bidders)
             ]
+
+    def get_budget(self, user_id):
+        return self.experiment["bidders"][user_id]["budget"]
+
+
+    def get_values(self, user_id):
+        if "values" in self.experiment["bidders"][user_id]:
+            return self.experiment["bidders"][user_id]["values"]
+        return self.experiment["values"]
+
 
     def iterative_best_response(self, return_bids=False):
         """
@@ -67,8 +84,7 @@ class AllPayAuction:
             count = 1
 
         while True:
-
-            old_bids = copy(self.bids)
+            old_bids = [bidder.bid for bidder in self.bids]
 
             for bidder in range(self.bidders):
 
@@ -84,7 +100,16 @@ class AllPayAuction:
 
                 count += 1
 
-            if old_bids == self.bids:
+            stale_state = True
+            for bidder in range(self.bidders):
+                #print(old_bids[bidder], self.bids[bidder].bid)
+                if old_bids[bidder] != self.bids[bidder].bid:
+                    #print("not yet")
+                    stale_state = False
+
+                    break
+
+            if stale_state:
                 break
 
         if return_bids:
@@ -113,16 +138,19 @@ class AllPayAuction:
 
             # Αν όχι και το id του είναι μεγαλύτερο από το id του πλειοδότη που κερδίζει κάνει την προσφορά του ίση με
             # με την προσφορά του άλλου.
-            elif self.bids[i].bid <= bidder.budget and self.bids[i].bid <= self.values[i] \
+            #elif self.bids[i].bid <= bidder.budget and self.bids[i].bid <= self.get_values(bidder.user_id)[i] \
+            elif self.bids[i].bid <= bidder.budget and self.bids[i].bid <= bidder.trophies[i] \
                     and self.bids[i].user_id > bidder.user_id:
 
                 attempts.insert(0, (bidder.get_utility(i), self.bids[i].bid))
 
             # Αν πάλι δεν έχει πιο δυνατο id τότε προσφέρει 1 παραπάνω αξία σε σχέση με τον άλλο.
-            elif self.bids[i].bid + 1 <= bidder.budget and self.bids[i].bid + 1 <= self.values[i]:
+            #elif self.bids[i].bid + 1 <= bidder.budget and self.bids[i].bid + 1 <= self.get_values(bidder.user_id)[i]:
+            elif self.bids[i].bid + 1 <= bidder.budget and self.bids[i].bid + 1 <= bidder.trophies[i]:
                 attempts.insert(0, (bidder.get_utility(i), self.bids[i].bid+1))
 
         # Επιστρέφει την προσφορά που του δίνει το πιο πολύ utility.
+        #print(attempts)
         return max(attempts, key=lambda attempt: attempt[0])[1]
 
     def find_bid(self, user_id):
@@ -134,6 +162,7 @@ class AllPayAuction:
         for position, bidder in enumerate(self.bids):
             if bidder.user_id == user_id:
                 return position
+
 
 
 
@@ -152,12 +181,21 @@ if __name__ == "__main__":
         experiments = [f for f in os.listdir(args.data)
                        if os.path.isfile(os.path.join(args.data, f)) and f.endswith(".json")]
     else:
-        with open(args.data, "r") as data_file:
+        experiments = [args.data]
+
+    for experiment in experiments:
+        with open(experiment, "r") as data_file:
             json_data = json.load(data_file)
-    au = AllPayAuction(json_data["values"], json_data["budgets"], random_start=args.random_start)
-    max_effort, avg_effort, min_effort = au.iterative_best_response()
-    print("Maximum effort: ", max_effort)
-    print("Average effort: ", avg_effort)
-    print("Minimum effort: ", min_effort)
-    for bid in au.bids:
-        print("User id:{0} made a bid of {1}".format(bid.user_id, bid.bid))
+
+        if type(json_data) is not list:
+            json_data = [json_data]
+
+        for series in json_data:
+
+            au = AllPayAuction(series, random_start=args.random_start)
+            max_effort, avg_effort, min_effort = au.iterative_best_response()
+            print("Maximum effort: ", max_effort)
+            print("Average effort: ", avg_effort)
+            print("Minimum effort: ", min_effort)
+            for bid in au.bids:
+                print("User id:{0} made a bid of {1}".format(bid.user_id, bid.bid))

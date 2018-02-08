@@ -1,4 +1,4 @@
 {
   "values": [999, 1],
-  "budgets": [1000, 2000, 300, 400]
+  "bidders": [{"budget": 1000}, {"budget": 2000}, {"budget": 500}, {"budget": 500}]
 }

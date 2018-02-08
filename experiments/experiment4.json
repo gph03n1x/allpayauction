@@ -2,31 +2,31 @@
   {
   "name": "experiment4.0",
   "values": [999, 1],
-  "budgets": [1000, 2000, 300, 400]
+  "bidders": [{"budget": 100}, {"budget": 110}, {"budget": 120}, {"budget": 130}]
   },
   {
   "name": "experiment4.1",
   "values": [900, 100],
-  "budgets": [1000, 2000, 300, 400]
+  "bidders": [{"budget": 100}, {"budget": 110}, {"budget": 120}, {"budget": 130}]
   },
   {
   "name": "experiment4.2",
   "values": [800, 200],
-  "budgets": [1000, 2000, 300, 400]
+  "bidders": [{"budget": 100}, {"budget": 110}, {"budget": 120}, {"budget": 130}]
   },
   {
   "name": "experiment4.3",
   "values": [700, 300],
-  "budgets": [1000, 2000, 300, 400]
+  "bidders": [{"budget": 100}, {"budget": 110}, {"budget": 120}, {"budget": 130}]
   },
   {
   "name": "experiment4.4",
   "values": [600, 400],
-  "budgets": [1000, 2000, 300, 400]
+  "bidders": [{"budget": 100}, {"budget": 110}, {"budget": 120}, {"budget": 130}]
   },
   {
   "name": "experiment4.5",
   "values": [501, 499],
-  "budgets": [1000, 2000, 300, 400]
+  "bidders": [{"budget": 100}, {"budget": 110}, {"budget": 120}, {"budget": 130}]
   }
 ]
