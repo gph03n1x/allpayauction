@@ -1,4 +1,5 @@
 {
+  "name": "example.json",
   "values": [999, 1],
   "bidders": [{"budget": 1000}, {"budget": 2000}, {"budget": 500}, {"budget": 500}]
 }

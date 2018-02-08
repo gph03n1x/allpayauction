@@ -5,9 +5,8 @@ import math
 import json
 import random
 import argparse
-from copy import copy
 from collections import defaultdict
-
+import matplotlib.pyplot as plt
 
 class Bidder:
     def __init__(self, user_id, budget, starting_bid, trophies):
@@ -50,7 +49,7 @@ class AllPayAuction:
 
         if random_start:
             self.bids = [
-                Bidder(user_id, self.get_budget(user_id), random.randint(0, self.budgets[user_id]), self.get_values(user_id))
+                Bidder(user_id, self.get_budget(user_id), random.randint(0, self.get_budget(user_id)), self.get_values(user_id))
                 for user_id in range(self.bidders)
             ]
         else:
@@ -69,7 +68,7 @@ class AllPayAuction:
         return self.experiment["values"]
 
 
-    def iterative_best_response(self, return_bids=False):
+    def iterative_best_response(self, return_bids=False, plot_mode=False):
         """
         Υλοποίηση του IBR. Σε κάθε iterate αφαιρεί έναν πλειοδότη από την λίστα των προσφορών ο οποίος μέσα από την
         μέθοδο user_action αποφασίζει την επόμενη του προσφορά. Στην συνέχεια γίνεται μια ταξινόμηση των προσφορών.
@@ -83,8 +82,11 @@ class AllPayAuction:
                 plot_data[bidder].append(self.bids[self.find_bid(bidder)].bid)
             count = 1
 
+        avg_values = []
+
         while True:
             old_bids = [bidder.bid for bidder in self.bids]
+            # TODO: check if they changed their bid better than comparing all the previous bids.
 
             for bidder in range(self.bidders):
 
@@ -92,6 +94,8 @@ class AllPayAuction:
                 selected_bidder.bid = self.user_action(selected_bidder)
                 self.bids.append(selected_bidder)
                 self.bids.sort(key=lambda bid: bid.bid, reverse=True)
+
+            avg_values.append(sum(bidder.bid for bidder in self.bids) / self.bidders)
 
             if return_bids:
                 for bidder in range(self.bidders):
@@ -114,6 +118,9 @@ class AllPayAuction:
 
         if return_bids:
             return count, plot_data
+
+        if plot_mode:
+            return avg_values
 
         return max(self.bids, key=lambda bid: bid.bid).bid,\
                sum(bidder.bid for bidder in self.bids) / self.bidders,\
@@ -171,6 +178,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Algorithmic trading iterative best response.")
     parser.add_argument("-d", "--data")
     parser.add_argument("-rs", "--random-start", action="store_true", default=False)
+    parser.add_argument("-p", "--plot", action="store_true", default=False) # TODO: store info in a a json
+
 
     args = parser.parse_args()
 
@@ -178,7 +187,7 @@ if __name__ == "__main__":
         parser.print_help()
 
     if os.path.isdir(args.data):
-        experiments = [f for f in os.listdir(args.data)
+        experiments = [os.path.join(args.data, f) for f in os.listdir(args.data)
                        if os.path.isfile(os.path.join(args.data, f)) and f.endswith(".json")]
     else:
         experiments = [args.data]
@@ -190,12 +199,17 @@ if __name__ == "__main__":
         if type(json_data) is not list:
             json_data = [json_data]
 
+        plt.subplot(121)
+
         for series in json_data:
 
             au = AllPayAuction(series, random_start=args.random_start)
-            max_effort, avg_effort, min_effort = au.iterative_best_response()
-            print("Maximum effort: ", max_effort)
-            print("Average effort: ", avg_effort)
-            print("Minimum effort: ", min_effort)
-            for bid in au.bids:
-                print("User id:{0} made a bid of {1}".format(bid.user_id, bid.bid))
+            data = au.iterative_best_response(plot_mode=args.plot)
+            # TODO: store in a text file
+            plt.plot(range(len(data)), data, label=series["name"])
+
+        plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+        plt.tight_layout()
+        plt.savefig(experiment+'.png')
+
+        plt.close()
