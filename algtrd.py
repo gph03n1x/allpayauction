@@ -1,12 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import os.path
+import pathlib
+import os
 import math
 import json
 import random
 import argparse
-from collections import defaultdict
 import matplotlib.pyplot as plt
+
+RESULTS_DIR = "results"
+
 
 class Bidder:
     def __init__(self, user_id, budget, starting_bid, trophies):
@@ -26,30 +29,27 @@ class Bidder:
         return self.trophies[trophy_id] - self.bid
 
     def __str__(self):
-        return "user: {0} budget: {1} trophies: {2} current-bid: {3}".format(str(self.user_id),
-                                                                             str(self.budget),
-                                                                             str(self.trophies),
-                                                                             str(self.bid),
-                                                                             )
+        return "user: {0} budget: {1} trophies: {2} current-bid: {3}".format(
+            str(self.user_id), str(self.budget), str(self.trophies), str(self.bid)
+        )
 
 
 class AllPayAuction:
-    def __init__(self, experiment, random_start=True):
+    def __init__(self, input_dictionary, random_start=True):
         """
         Αρχικοποιεί την δημοπρασία (διαγωνισμό) με προσφορές για τον κάθε πλειοδότη.
         Η αρχική προσφορά μπορεί είτε να ξεκινάει για όλους από το 0 είτε να είναι τυχαία.
-        :param values:
-        :param budgets:
+        :param input_dictionary:
         :param random_start:
         """
-        self.experiment = experiment
+        self.experiment = input_dictionary
         self.bidders = len(self.experiment["bidders"])
         self.k = len(self.get_values(0))
 
-
         if random_start:
             self.bids = [
-                Bidder(user_id, self.get_budget(user_id), random.randint(0, self.get_budget(user_id)), self.get_values(user_id))
+                Bidder(user_id, self.get_budget(user_id),
+                       random.randint(0, self.get_budget(user_id)), self.get_values(user_id))
                 for user_id in range(self.bidders)
             ]
         else:
@@ -61,77 +61,47 @@ class AllPayAuction:
     def get_budget(self, user_id):
         return self.experiment["bidders"][user_id]["budget"]
 
-
     def get_values(self, user_id):
         if "values" in self.experiment["bidders"][user_id]:
             return self.experiment["bidders"][user_id]["values"]
         return self.experiment["values"]
 
-
-    def iterative_best_response(self, return_bids=False, plot_mode=False):
+    def iterative_best_response(self):
         """
         Υλοποίηση του IBR. Σε κάθε iterate αφαιρεί έναν πλειοδότη από την λίστα των προσφορών ο οποίος μέσα από την
         μέθοδο user_action αποφασίζει την επόμενη του προσφορά. Στην συνέχεια γίνεται μια ταξινόμηση των προσφορών.
         Αν οι προσφορές δεν αλλάξουν σε έναν κύκλο είναι ένδειξη ότι έχουμε ισορροπία Nash και while loop σταματάει.
-        :param return_bids: boolean, ενδυκνύει αν θέλει να επιστρέψει τις αλλαγές των bids ανά iteration
         :return:
         """
-        if return_bids:
-            plot_data = defaultdict(list)
-            for bidder in range(self.bidders):
-                plot_data[bidder].append(self.bids[self.find_bid(bidder)].bid)
-            count = 1
 
         avg_values = []
 
         while True:
-            old_bids = [bidder.bid for bidder in self.bids]
-            # TODO: check if they changed their bid better than comparing all the previous bids.
-
+            changes = False
             for bidder in range(self.bidders):
 
                 selected_bidder = self.bids.pop(self.find_bid(bidder))
+                old_bid = selected_bidder.bid
                 selected_bidder.bid = self.user_action(selected_bidder)
+
                 self.bids.append(selected_bidder)
                 self.bids.sort(key=lambda bid: bid.bid, reverse=True)
 
-            avg_values.append(sum(bidder.bid for bidder in self.bids) / self.bidders)
+                if old_bid != selected_bidder.bid:
+                    changes = True
 
-            if return_bids:
-                for bidder in range(self.bidders):
-                    position = self.find_bid(bidder)
-                    plot_data[bidder].append(self.bids[position].bid)
-
-                count += 1
-
-            stale_state = True
-            for bidder in range(self.bidders):
-                #print(old_bids[bidder], self.bids[bidder].bid)
-                if old_bids[bidder] != self.bids[bidder].bid:
-                    #print("not yet")
-                    stale_state = False
-
-                    break
-
-            if stale_state:
+            if not changes:
                 break
 
-        if return_bids:
-            return count, plot_data
+            avg_values.append(sum(bidder.bid for bidder in self.bids) / self.bidders)
 
-        if plot_mode:
-            return avg_values
-
-        return max(self.bids, key=lambda bid: bid.bid).bid,\
-               sum(bidder.bid for bidder in self.bids) / self.bidders,\
-               min(self.bids, key=lambda bid: bid.bid).bid
+        return avg_values
 
     def user_action(self, bidder):
         """
         Ο χρήστης έχει μια σειρά από αποφάσεις από τις οποίες διαλέγει εκείνη που του αποδίδει το μεγαλύτερο
         utility. Η αποφάσεις του λαμβάνονται σε σχέση με το κάθε τρόπαιο.
-        :param user_id:
-        :param bidder.bid:
+        :param bidder:
         :return:
         """
 
@@ -145,19 +115,16 @@ class AllPayAuction:
 
             # Αν όχι και το id του είναι μεγαλύτερο από το id του πλειοδότη που κερδίζει κάνει την προσφορά του ίση με
             # με την προσφορά του άλλου.
-            #elif self.bids[i].bid <= bidder.budget and self.bids[i].bid <= self.get_values(bidder.user_id)[i] \
             elif self.bids[i].bid <= bidder.budget and self.bids[i].bid <= bidder.trophies[i] \
                     and self.bids[i].user_id > bidder.user_id:
 
                 attempts.insert(0, (bidder.get_utility(i), self.bids[i].bid))
 
             # Αν πάλι δεν έχει πιο δυνατο id τότε προσφέρει 1 παραπάνω αξία σε σχέση με τον άλλο.
-            #elif self.bids[i].bid + 1 <= bidder.budget and self.bids[i].bid + 1 <= self.get_values(bidder.user_id)[i]:
             elif self.bids[i].bid + 1 <= bidder.budget and self.bids[i].bid + 1 <= bidder.trophies[i]:
                 attempts.insert(0, (bidder.get_utility(i), self.bids[i].bid+1))
 
         # Επιστρέφει την προσφορά που του δίνει το πιο πολύ utility.
-        #print(attempts)
         return max(attempts, key=lambda attempt: attempt[0])[1]
 
     def find_bid(self, user_id):
@@ -171,15 +138,12 @@ class AllPayAuction:
                 return position
 
 
-
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Algorithmic trading iterative best response.")
     parser.add_argument("-d", "--data")
     parser.add_argument("-rs", "--random-start", action="store_true", default=False)
-    parser.add_argument("-p", "--plot", action="store_true", default=False) # TODO: store info in a a json
 
+    pathlib.Path(RESULTS_DIR).mkdir(parents=True, exist_ok=True)
 
     args = parser.parse_args()
 
@@ -200,12 +164,14 @@ if __name__ == "__main__":
             json_data = [json_data]
 
         plt.subplot(121)
-
+        result = {}
         for series in json_data:
 
             au = AllPayAuction(series, random_start=args.random_start)
-            data = au.iterative_best_response(plot_mode=args.plot)
-            # TODO: store in a text file
+            data = au.iterative_best_response()
+            # TODO: store more information
+            result[series["name"]] = data
+
             plt.plot(range(len(data)), data, label=series["name"])
 
         plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
@@ -213,3 +179,6 @@ if __name__ == "__main__":
         plt.savefig(experiment+'.png')
 
         plt.close()
+        experiment_filename = experiment.split("\\")[-1]
+        with open(RESULTS_DIR + "/" + str(experiment_filename), 'w') as result_file:
+            json.dump(result, result_file)

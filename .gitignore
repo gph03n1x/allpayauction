@@ -10,6 +10,8 @@ __pycache__/
 
 # png files
 *.png
+# json results.
+results/
 
 # Distribution / packaging
 .Python
