@@ -169,8 +169,9 @@ if __name__ == "__main__":
 
             au = AllPayAuction(series, random_start=args.random_start)
             data = au.iterative_best_response()
-            # TODO: store more information
-            result[series["name"]] = data
+
+            result[series["name"]] = {"effort": data,
+                                      "final_bids": [str(bid) for bid in au.bids]}
 
             plt.plot(range(len(data)), data, label=series["name"])
 
