@@ -9,6 +9,7 @@ import argparse
 import matplotlib.pyplot as plt
 
 RESULTS_DIR = "results"
+IMAGES_DIR = "images"
 
 
 class Bidder:
@@ -144,6 +145,7 @@ if __name__ == "__main__":
     parser.add_argument("-rs", "--random-start", action="store_true", default=False)
 
     pathlib.Path(RESULTS_DIR).mkdir(parents=True, exist_ok=True)
+    pathlib.Path(IMAGES_DIR).mkdir(parents=True, exist_ok=True)
 
     args = parser.parse_args()
 
@@ -177,9 +179,11 @@ if __name__ == "__main__":
 
         plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
         plt.tight_layout()
-        plt.savefig(experiment+'.png')
 
-        plt.close()
         experiment_filename = experiment.split("\\")[-1]
         with open(RESULTS_DIR + "/" + str(experiment_filename), 'w') as result_file:
             json.dump(result, result_file)
+
+        plt.savefig(IMAGES_DIR + "/" + str(experiment_filename) + '.png')
+
+        plt.close()
