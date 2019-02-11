@@ -1,1 +1,4 @@
-matplotlib==2.0.0
+Click==7.0
+matplotlib==3.0.2
+marshmallow==2.18.0
+python-decouple==3.1

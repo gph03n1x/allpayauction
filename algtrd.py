@@ -2,40 +2,18 @@
 # -*- coding: utf-8 -*-
 import pathlib
 import os
-import math
 import json
 import random
 import argparse
 import matplotlib.pyplot as plt
 
-RESULTS_DIR = "results"
-IMAGES_DIR = "images"
-
-
-class Bidder:
-    def __init__(self, user_id, budget, starting_bid, trophies):
-        self.user_id = user_id
-        self.budget = budget
-        self.bid = starting_bid
-        self.trophies = trophies
-
-    def __lt__(self, other):
-        if self.bid == other.bid:
-            return self.user_id < other.user_id
-        return self.bid < other.bid
-
-    def get_utility(self, trophy_id):
-        if self.bid > self.budget:
-            return -math.inf
-        return self.trophies[trophy_id] - self.bid
-
-    def __str__(self):
-        return "user: {0} budget: {1} trophies: {2} current-bid: {3}".format(
-            str(self.user_id), str(self.budget), str(self.trophies), str(self.bid)
-        )
+from core.bidder import Bidder
+from core.settings import IMAGES_DIRECTORY, RESULTS_DIRECTORY
 
 
 class AllPayAuction:
+    raise_step = 1
+
     def __init__(self, input_dictionary, random_start=True):
         """
         Αρχικοποιεί την δημοπρασία (διαγωνισμό) με προσφορές για τον κάθε πλειοδότη.
@@ -122,8 +100,8 @@ class AllPayAuction:
                 attempts.insert(0, (bidder.get_utility(i), self.bids[i].bid))
 
             # Αν πάλι δεν έχει πιο δυνατο id τότε προσφέρει 1 παραπάνω αξία σε σχέση με τον άλλο.
-            elif self.bids[i].bid + 1 <= bidder.budget and self.bids[i].bid + 1 <= bidder.trophies[i]:
-                attempts.insert(0, (bidder.get_utility(i), self.bids[i].bid+1))
+            elif self.bids[i].bid + self.raise_step <= bidder.budget and self.bids[i].bid + self.raise_step <= bidder.trophies[i]:
+                attempts.insert(0, (bidder.get_utility(i), self.bids[i].bid+self.raise_step))
 
         # Επιστρέφει την προσφορά που του δίνει το πιο πολύ utility.
         return max(attempts, key=lambda attempt: attempt[0])[1]
@@ -144,8 +122,8 @@ if __name__ == "__main__":
     parser.add_argument("-d", "--data")
     parser.add_argument("-rs", "--random-start", action="store_true", default=False)
 
-    pathlib.Path(RESULTS_DIR).mkdir(parents=True, exist_ok=True)
-    pathlib.Path(IMAGES_DIR).mkdir(parents=True, exist_ok=True)
+    pathlib.Path(RESULTS_DIRECTORY).mkdir(parents=True, exist_ok=True)
+    pathlib.Path(IMAGES_DIRECTORY).mkdir(parents=True, exist_ok=True)
 
     args = parser.parse_args()
 
@@ -181,9 +159,9 @@ if __name__ == "__main__":
         plt.tight_layout()
 
         experiment_filename = experiment.split("\\")[-1]
-        with open(RESULTS_DIR + "/" + str(experiment_filename), 'w') as result_file:
+        with open(RESULTS_DIRECTORY + "/" + str(experiment_filename), 'w') as result_file:
             json.dump(result, result_file)
 
-        plt.savefig(IMAGES_DIR + "/" + str(experiment_filename) + '.png')
+        plt.savefig(IMAGES_DIRECTORY + "/" + str(experiment_filename) + '.png')
 
         plt.close()
