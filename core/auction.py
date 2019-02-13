@@ -1,5 +1,5 @@
-from core.schemas import BiddersSchema, AuctionSchema
 from core.bidder import Bidders
+from core.schemas import AuctionSchema, BiddersSchema
 
 
 class AllPayAuction:
@@ -19,9 +19,10 @@ class AllPayAuction:
 
     def iterative_best_response(self):
         """
-        Υλοποίηση του IBR. Σε κάθε iterate αφαιρεί έναν πλειοδότη από την λίστα των προσφορών ο οποίος μέσα από την
-        μέθοδο user_action αποφασίζει την επόμενη του προσφορά. Στην συνέχεια γίνεται μια ταξινόμηση των προσφορών.
-        Αν οι προσφορές δεν αλλάξουν σε έναν κύκλο είναι ένδειξη ότι έχουμε ισορροπία Nash και while loop σταματάει.
+        Υλοποίηση του IBR. Σε κάθε iterate αφαιρεί έναν πλειοδότη από την λίστα των προσφορών
+        ο οποίος μέσα από την μέθοδο user_action αποφασίζει την επόμενη του προσφορά. Στην
+        συνέχεια γίνεται μια ταξινόμηση των προσφορών. Αν οι προσφορές δεν αλλάξουν σε έναν κύκλο
+        είναι ένδειξη ότι έχουμε ισορροπία Nash και while loop σταματάει.
         :return:
         """
 
@@ -66,4 +67,3 @@ def create_auction(auction_payload, random_start):
     bidders = BiddersSchema().load(auction_payload).data
     auction = AuctionSchema().load(auction_payload).data
     return AllPayAuction(auction, bidders, random_start)
-

@@ -1,5 +1,6 @@
-from marshmallow import Schema, fields, post_load
 import uuid
+
+from marshmallow import Schema, fields
 
 
 class BidderSchema(Schema):
@@ -7,10 +8,6 @@ class BidderSchema(Schema):
     name = fields.String(missing=lambda: str(uuid.uuid4()))
     raise_step = fields.Float(load_from='raises', missing=1.0)
     item_values = fields.List(fields.Float(), required=False)
-
-    @post_load
-    def load_item_values(self, data):
-        return data
 
 
 class BiddersSchema(Schema):

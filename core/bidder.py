@@ -3,13 +3,12 @@ import random
 
 
 class Bidder:
-    def __init__(self, user_id, budget, starting_bid, trophies):
+    def __init__(self, user_id, budget, starting_bid, trophies, raise_step):
         self.user_id = user_id
         self.budget = budget
         self.bid = starting_bid
         self.trophies = trophies
-        print(trophies)
-        self.raise_step = 1
+        self.raise_step = raise_step
 
     def __lt__(self, other):
         if self.bid == other.bid:
@@ -45,11 +44,13 @@ class Bidder:
             if bidder.user_id == self.user_id:
                 continue
 
-            # Κοιτάει αν η προσφορά του ξεπερνάει την προσφορά του πλειοδότη που κερδίζει το συγκεκριμένο τρόπαιο.
+            # Κοιτάει αν η προσφορά του ξεπερνάει την προσφορά του
+            # πλειοδότη που κερδίζει το συγκεκριμένο τρόπαιο.
             if self.bid > bidder.bid:
                 attempts.insert(0, (self.get_utility(self.bid, trophy_position), self.bid))
 
-            # Αν όχι και το id του είναι μεγαλύτερο από το id του πλειοδότη που κερδίζει κάνει την προσφορά του ίση με
+            # Αν όχι και το id του είναι μεγαλύτερο από το id του
+            # πλειοδότη που κερδίζει κάνει την προσφορά του ίση με
             # με την προσφορά του άλλου.
             elif bidder.bid <= self.budget and bidder.bid <= self.trophies[trophy_position] \
                     and bidder.user_id > self.user_id:
@@ -57,7 +58,8 @@ class Bidder:
                 attempts.insert(0, (self.get_utility(bidder.bid, trophy_position), bidder.bid))
 
             # Αν πάλι δεν έχει πιο δυνατο id τότε προσφέρει 1 παραπάνω αξία σε σχέση με τον άλλο.
-            elif bidder.bid + self.raise_step <= self.budget and bidder.bid + self.raise_step <= self.trophies[trophy_position]:
+            elif bidder.bid + self.raise_step <= self.budget \
+                    and bidder.bid + self.raise_step <= self.trophies[trophy_position]:
                 new_bid = bidder.bid + self.raise_step
                 attempts.insert(0, (self.get_utility(new_bid, trophy_position), new_bid))
 
@@ -77,7 +79,13 @@ class Bidders:
         self.random_start = random_start
 
         self.bidders = [
-            Bidder(user_id, bidder['budget'], self.get_starting_budget(bidder), self.get_item_values(bidder))
+            Bidder(
+                user_id,
+                bidder['budget'],
+                self.get_starting_budget(bidder),
+                self.get_item_values(bidder),
+                bidder['raise_step']
+            )
             for user_id, bidder in enumerate(bidders['bidders'])
         ]
 
