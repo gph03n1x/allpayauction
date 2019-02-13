@@ -2,7 +2,7 @@
   {
   "name": "experiment1.0",
   "values": [999, 1],
-  "bidders": [{"budget": 1000}, {"budget": 1000}, {"budget": 1000}, {"budget": 1000}]
+  "bidders": [{"budget": 1000, "raise_step": 5}, {"budget": 1000}, {"budget": 1000}, {"budget": 1000}]
   },
   {
   "name": "experiment1.1",
